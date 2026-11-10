@@ -1,0 +1,83 @@
+defmodule Roost do
+  @moduledoc """
+  One registration per app.
+
+  An app registers itself once, as plain data, under the `:roost` application's `:apps` key,
+  keyed by its own OTP application name:
+
+      import Config
+
+      config :roost, :apps,
+        my_app: [
+          pages: [{:main, "/reports", MyApp.ReportsLive}],
+          links: [{:sidebar, "Reports", "/reports"}],
+          settings: [{:report_limit, "Reports kept per account", 100}]
+        ]
+
+  Keep that in a file inside the app (for example `apps/my_app/roost.exs`) and have the host's
+  `config/config.exs` import every such file, so the host never names an app:
+
+      for registration <- Path.wildcard(Path.expand("../apps/*/roost.exs", __DIR__)) do
+        import_config registration
+      end
+
+  The host's router writes every registered page in when it is built (`Roost.Router`). At run
+  time a page, link or setting shows only while its app is in the running release
+  (`present?/1`); a page whose app is absent answers 404 (`Roost.Plug`).
+
+  ## A registration
+
+    * `:pages` - `{live_session, path, live_view}`: the page is written into the host's
+      `live_session` of that name, so live navigation to and from the host's other pages in it
+      needs no reload.
+    * `:links` - `{place, label, path}`: a link the host draws at a named place, such as a menu.
+    * `:settings` - `{key, label, default}`: a setting the host shows. Its value is the app's own
+      application env under `key`, else `default`.
+  """
+
+  @typedoc "One app's registration."
+  @type registration :: [
+          pages: [{atom(), String.t(), module()}],
+          links: [{atom(), String.t(), String.t()}],
+          settings: [{atom(), String.t(), term()}]
+        ]
+
+  @typedoc "A link a present app brings to a place."
+  @type link :: %{app: atom(), label: String.t(), path: String.t()}
+
+  @typedoc "A setting a present app brings, with its current value."
+  @type setting :: %{app: atom(), key: atom(), label: String.t(), value: term()}
+
+  @doc """
+  Returns every registration the configuration holds, whether or not its app is in the release.
+  """
+  @spec registered() :: [{atom(), registration()}]
+  def registered, do: Application.get_env(:roost, :apps, [])
+
+  @doc "Returns the registrations of the apps in the running release."
+  @spec present() :: [{atom(), registration()}]
+  def present, do: Enum.filter(registered(), fn {app, _registration} -> present?(app) end)
+
+  @doc """
+  Returns true while `app` is loaded. In a release every app the release carries is loaded at
+  boot, so this means the app is in the build.
+  """
+  @spec present?(atom()) :: boolean()
+  def present?(app) when is_atom(app), do: Application.spec(app, :vsn) != nil
+
+  @doc "Returns the links present apps bring to `place`, in registration order."
+  @spec links(atom()) :: [link()]
+  def links(place) when is_atom(place) do
+    for {app, registration} <- present(),
+        {^place, label, path} <- Keyword.get(registration, :links, []),
+        do: %{app: app, label: label, path: path}
+  end
+
+  @doc "Returns the settings present apps bring, each with its current value."
+  @spec settings() :: [setting()]
+  def settings do
+    for {app, registration} <- present(),
+        {key, label, default} <- Keyword.get(registration, :settings, []),
+        do: %{app: app, key: key, label: label, value: Application.get_env(app, key, default)}
+  end
+end
