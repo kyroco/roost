@@ -2,7 +2,7 @@
 
 One registration per app, for Phoenix umbrella projects.
 
-An app in an umbrella registers itself once. Its one registration names everything it brings to the host web app: its LiveView pages, the links that lead to them, its settings, and the panels it puts on the host's pages. When the app is in the release, all of it shows. When it is not, none of it shows, and its pages answer 404 instead of crashing.
+An app in an umbrella registers itself once. Its one registration names everything it brings to the host web app: its LiveView pages, the links that lead to them, its settings, the panels it puts on the host's pages, its scheduled jobs and its database migrations. When the app is in the release, all of it shows. When it is not, none of it shows, and its pages answer 404 instead of crashing.
 
 The host never names an app. The same build can then ship more than one release, each carrying a different set of apps.
 
@@ -12,7 +12,7 @@ Roost is below version 1.0. Its shape may still change.
 
 Roost follows the pattern Phoenix LiveDashboard uses. The app brings its pages, and the host's one router writes them in when it is built. A page therefore sits in the host's own `live_session`, behind the host's sign-in checks and layout. Moving between it and the host's other pages in that session needs no reload.
 
-1. Each app registers its pages, links, settings and panels as plain data in a `roost.exs` file in its own folder.
+1. Each app registers its pages, links, settings, panels, jobs and migrations as plain data in a `roost.exs` file in its own folder.
 2. The host's config imports every such file.
 3. The host's router calls `roost_pages/1` inside a `live_session`, which writes in every page registered to that session.
 4. At run time, `Roost.links/1` and `Roost.settings/0` return only what the apps in the running release bring. A named place on a host page (`Roost.Panel.place/1`) shows only their panels. `Roost.Plug` answers 404 for a page whose app is not there.
@@ -101,7 +101,31 @@ config :roost, :apps,
 
 Each panel is rendered as a live component, so it keeps its own state and handles its own events. It receives `:context`, the map the host passed, and `:place`, the place's name. A place no app in the running release fills renders nothing, and no error.
 
-### 6. Put the app in the release
+### 6. Schedule jobs and run migrations
+
+An app names its scheduled jobs as Oban crontab entries, and its migrations folder for a repo:
+
+```elixir
+config :roost, :apps,
+  reports: [
+    jobs: [{"0 3 * * *", Reports.NightlyWorker}],
+    migrations: [{MyApp.Repo, "priv/repo/migrations"}]
+  ]
+```
+
+The host adds `Roost.jobs()` to its Oban cron plugin's `:crontab` before Oban starts. It runs its own migrations first, then each folder from `Roost.migrations(repo)`:
+
+```elixir
+Roost.load_registered()
+
+for path <- Roost.migrations(MyApp.Repo) do
+  Ecto.Migrator.run(MyApp.Repo, path, :up, all: true)
+end
+```
+
+Roost does not depend on Oban or Ecto; jobs and migrations are plain data the host hands to them.
+
+### 7. Put the app in the release
 
 The host does not depend on its apps, so a release carries an app only if the release lists it:
 
@@ -111,7 +135,7 @@ releases: [
 ]
 ```
 
-Leave the app out of a release, and its pages, links, settings and panels are gone from that release.
+Leave the app out of a release, and its pages, links, settings, panels, jobs and migrations are gone from that release.
 
 ## Things to know
 
@@ -120,9 +144,9 @@ Leave the app out of a release, and its pages, links, settings and panels are go
 - An app is "in the release" while it is loaded. A release loads every app it lists at boot.
 - Run tests from the umbrella root. From inside the host app's folder, an app the host does not depend on is not loaded.
 
-## Not yet
+## Optional dependencies
 
-Registrations do not yet cover background jobs or database migrations.
+Phoenix, Phoenix LiveView and Plug are optional dependencies. A host app that only runs jobs and migrations does not need them; without them, `Roost.Panel` and `Roost.Plug` are not compiled.
 
 ## License
 

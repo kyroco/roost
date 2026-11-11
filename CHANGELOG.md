@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.0
+
+- Background jobs: a registration names Oban crontab entries under `:jobs`, and `Roost.jobs/0` returns those whose worker is in the running release, for the host to add to its schedule.
+- Migrations: a registration names `{repo, path}` under `:migrations`, and `Roost.migrations/1` returns each present app's folder for a repo, for the host to run after its own.
+- `Roost.load_registered/0` loads the registered apps a release carries, for tasks run with `eval`.
+- Phoenix, Phoenix LiveView and Plug are now optional. Without them, `Roost.Panel` and `Roost.Plug` are not compiled, and the rest works.
+
 ## 0.2.0
 
 - Page panels: a registration names `panels: [{place, live_component}]`, and a host page marks a named place with `Roost.Panel.place/1`. Each panel renders as a live component with the host's `:context` and the `:place` name. A place no app in the running release fills renders nothing.

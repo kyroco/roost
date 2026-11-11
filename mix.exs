@@ -1,7 +1,7 @@
 defmodule Roost.MixProject do
   use Mix.Project
 
-  @version "0.2.0"
+  @version "0.3.0"
 
   def project do
     [
@@ -27,9 +27,9 @@ defmodule Roost.MixProject do
 
   defp deps do
     [
-      {:phoenix, "~> 1.7"},
-      {:phoenix_live_view, "~> 1.0"},
-      {:plug, "~> 1.15"},
+      {:phoenix, "~> 1.7", optional: true},
+      {:phoenix_live_view, "~> 1.0", optional: true},
+      {:plug, "~> 1.15", optional: true},
       {:jason, "~> 1.4", only: :test},
       {:ex_doc, "~> 0.34", only: :dev, runtime: false}
     ]

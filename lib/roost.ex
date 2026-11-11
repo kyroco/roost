@@ -35,6 +35,10 @@ defmodule Roost do
       application env under `key`, else `default`.
     * `:panels` - `{place, live_component}`: a panel that fills a named place on a host page
       (`Roost.Panel.place/1`). A place no app fills shows nothing.
+    * `:jobs` - Oban crontab entries, `{expression, worker}` or `{expression, worker, opts}`,
+      that the host adds to its schedule (`jobs/0`).
+    * `:migrations` - `{repo, path}`: a migrations folder inside the app that the host runs on
+      `repo` after its own (`migrations/1`).
   """
 
   @typedoc "One app's registration."
@@ -42,7 +46,9 @@ defmodule Roost do
           pages: [{atom(), String.t(), module()}],
           links: [{atom(), String.t(), String.t()}],
           settings: [{atom(), String.t(), term()}],
-          panels: [{atom(), module()}]
+          panels: [{atom(), module()}],
+          jobs: [{String.t(), module()} | {String.t(), module(), keyword()}],
+          migrations: [{module(), String.t()}]
         ]
 
   @typedoc "A link a present app brings to a place."
@@ -98,6 +104,47 @@ defmodule Roost do
       nil -> false
       app -> present?(app)
     end
+  end
+
+  @doc """
+  Returns the scheduled jobs present apps register, as Oban crontab entries (`{expression,
+  worker}` or `{expression, worker, opts}`), leaving out any whose worker is not in the running
+  release. Add them to the host's Oban cron plugin's `:crontab` before Oban starts.
+  """
+  @spec jobs() :: [{String.t(), module()} | {String.t(), module(), keyword()}]
+  def jobs do
+    for {_app, registration} <- registered(),
+        entry <- Keyword.get(registration, :jobs, []),
+        in_release?(elem(entry, 1)),
+        do: entry
+  end
+
+  @doc """
+  Returns, for `repo`, the migrations folder of each present app that names it, as a full path
+  inside that app. Run the host's own migrations first, then these, with
+  `Ecto.Migrator.run(repo, path, :up, all: true)`.
+  """
+  @spec migrations(module()) :: [String.t()]
+  def migrations(repo) when is_atom(repo) do
+    for {app, registration} <- registered(),
+        present?(app),
+        {^repo, path} <- Keyword.get(registration, :migrations, []),
+        do: Application.app_dir(app, path)
+  end
+
+  @doc """
+  Loads every registered app the release carries, for a task that runs without starting the
+  release (such as a migration step run with `eval`), so `present?/1` sees them.
+  """
+  @spec load_registered() :: :ok
+  def load_registered do
+    _ = Application.load(:roost)
+
+    for {app, _registration} <- registered() do
+      _ = Application.load(app)
+    end
+
+    :ok
   end
 
   @doc "Returns the settings present apps bring, each with its current value."
