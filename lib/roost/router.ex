@@ -23,6 +23,33 @@ defmodule Roost.Router do
   when the host's configuration changes; `mix compile --force` after editing a registration.
   """
 
+  @doc """
+  Writes in the controller routes registered to `scope`, inside the host's own `scope` block, so
+  each runs the host's pipeline for that scope and then `Roost.Plug`, which answers 404 when the
+  route's app is not in the running release.
+  """
+  defmacro roost_routes(scope) when is_atom(scope) do
+    routes =
+      for {_app, registration} <- Roost.registered(),
+          {^scope, verb, path, controller, action} <- Keyword.get(registration, :routes, []),
+          do: {verb, path, controller, action}
+
+    written =
+      for {verb, path, controller, action} <- routes do
+        {verb, [],
+         [path, controller, action, [private: Macro.escape(%{roost_module: controller})]]}
+      end
+
+    quote do
+      @compile {:no_warn_undefined, unquote(routes |> Enum.map(&elem(&1, 2)) |> Enum.uniq())}
+
+      scope "/", alias: false do
+        pipe_through(Roost.Plug)
+        unquote_splicing(written)
+      end
+    end
+  end
+
   @doc "Writes in the pages registered to `live_session`."
   defmacro roost_pages(live_session) when is_atom(live_session) do
     pages =

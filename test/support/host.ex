@@ -34,12 +34,20 @@ defmodule Roost.Test.HostLive do
   end
 end
 
+defmodule Roost.Test.PresentController do
+  @moduledoc false
+  use Phoenix.Controller, formats: [:html]
+
+  def show(conn, _params), do: Plug.Conn.send_resp(conn, 200, "A route an app brings")
+  def create(conn, _params), do: Plug.Conn.send_resp(conn, 201, "Made by a route an app brings")
+end
+
 defmodule Roost.Test.Router do
   @moduledoc false
   use Phoenix.Router
 
   import Phoenix.LiveView.Router
-  import Roost.Router, only: [roost_pages: 1]
+  import Roost.Router, only: [roost_pages: 1, roost_routes: 1]
 
   pipeline :browser do
     plug :fetch_session
@@ -52,6 +60,9 @@ defmodule Roost.Test.Router do
       live "/host", Roost.Test.HostLive
       roost_pages(:main)
     end
+
+    get "/host-route", Roost.Test.PresentController, :show
+    roost_routes(:main)
   end
 end
 

@@ -31,6 +31,9 @@ defmodule Roost do
       `live_session` of that name, so live navigation to and from the host's other pages in it
       needs no reload. `{live_session, path, live_view, action}` opens the page with that live
       action, as Phoenix's `live/3` does, so one page module can serve several paths.
+    * `:routes` - `{scope, verb, path, controller, action}`: a controller route the host writes
+      into its own scope of that name with `Roost.Router.roost_routes/1`, behind that scope's
+      pipeline, for a path that is not a LiveView page, such as a form post or a file.
     * `:links` - `{place, label, path}`: a link the host draws at a named place, such as a menu.
     * `:settings` - `{key, label, default}`: a setting the host shows. Its value is the app's own
       application env under `key`, else `default`.
@@ -45,6 +48,7 @@ defmodule Roost do
   @typedoc "One app's registration."
   @type registration :: [
           pages: [{atom(), String.t(), module()} | {atom(), String.t(), module(), atom()}],
+          routes: [{atom(), atom(), String.t(), module(), atom()}],
           links: [{atom(), String.t(), String.t()}],
           settings: [{atom(), String.t(), term()}],
           panels: [{atom(), module()}],

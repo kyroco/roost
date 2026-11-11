@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.0
+
+- Controller routes: a registration names `routes: [{scope, verb, path, controller, action}]`, and the host writes them into its own scope with `Roost.Router.roost_routes/1`. Each runs the host's pipeline for that scope and then `Roost.Plug`, so a route whose app is not in the running release answers 404.
+
 ## 0.4.0
 
 - A page may carry a live action: `{live_session, path, live_view, action}` opens the page with that action, as Phoenix's `live/3` does, so one page module can serve several paths. The three-element form is unchanged.

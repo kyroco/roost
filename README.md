@@ -45,6 +45,7 @@ config :roost, :apps,
 ```
 
 - `pages` lists `{live_session, path, live_view}`. Each page is written into the host's `live_session` of that name. Add a fourth element, `{live_session, path, live_view, action}`, to open the page with that live action, the way Phoenix's `live/3` does, so one page module can serve several paths.
+- `routes` lists `{scope, verb, path, controller, action}`. Each is a controller route, such as a form post or a file, that the host writes into its own scope of that name with `roost_routes/1`, behind that scope's pipeline and `Roost.Plug`.
 - `links` lists `{place, label, path}`. Each is a link the host draws at a named place, such as a menu.
 - `settings` lists `{key, label, default}`. The setting's value is the app's own application env under `key`, or the default.
 

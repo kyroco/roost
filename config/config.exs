@@ -9,6 +9,10 @@ if config_env() == :test do
         {:main, "/present", Roost.Test.PresentLive},
         {:main, "/present/other", Roost.Test.PresentLive, :other}
       ],
+      routes: [
+        {:main, :get, "/present-route", Roost.Test.PresentController, :show},
+        {:main, :post, "/present-route", Roost.Test.PresentController, :create}
+      ],
       links: [{:sidebar, "Present page", "/present"}, {:footer, "Help", "/help"}],
       settings: [{:greeting, "Greeting the page shows", "hello"}],
       panels: [{:host_top, Roost.Test.PresentPanel}],
@@ -20,6 +24,7 @@ if config_env() == :test do
     ],
     not_in_release: [
       pages: [{:main, "/absent", Roost.Test.AbsentLive}],
+      routes: [{:main, :get, "/absent-route", Roost.Test.AbsentController, :show}],
       links: [{:sidebar, "Absent page", "/absent"}],
       settings: [{:absent_setting, "A setting nobody sees", 1}],
       panels: [{:host_top, Roost.Test.AbsentPanel}, {:host_bottom, Roost.Test.AbsentPanel}],
