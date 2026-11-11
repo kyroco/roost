@@ -35,6 +35,8 @@ defmodule Roost do
       into its own scope of that name with `Roost.Router.roost_routes/1`, behind that scope's
       pipeline, for a path that is not a LiveView page, such as a form post or a file.
     * `:links` - `{place, label, path}`: a link the host draws at a named place, such as a menu.
+      `{place, label, path, opts}` adds a keyword list the host reads as it draws the link, such
+      as an icon or a line of text; roost passes it through untouched.
     * `:settings` - `{key, label, default}`: a setting the host shows. Its value is the app's own
       application env under `key`, else `default`.
     * `:panels` - `{place, live_component}`: a panel that fills a named place on a host page
@@ -49,15 +51,15 @@ defmodule Roost do
   @type registration :: [
           pages: [{atom(), String.t(), module()} | {atom(), String.t(), module(), atom()}],
           routes: [{atom(), atom(), String.t(), module(), atom()}],
-          links: [{atom(), String.t(), String.t()}],
+          links: [{atom(), String.t(), String.t()} | {atom(), String.t(), String.t(), keyword()}],
           settings: [{atom(), String.t(), term()}],
           panels: [{atom(), module()}],
           jobs: [{String.t(), module()} | {String.t(), module(), keyword()}],
           migrations: [{module(), String.t()}]
         ]
 
-  @typedoc "A link a present app brings to a place."
-  @type link :: %{app: atom(), label: String.t(), path: String.t()}
+  @typedoc "A link a present app brings to a place, with the options it was registered with."
+  @type link :: %{app: atom(), label: String.t(), path: String.t(), opts: keyword()}
 
   @typedoc "A panel that fills a named place on a host page."
   @type panel :: %{app: atom(), place: atom(), component: module()}
@@ -86,9 +88,13 @@ defmodule Roost do
   @spec links(atom()) :: [link()]
   def links(place) when is_atom(place) do
     for {app, registration} <- present(),
-        {^place, label, path} <- Keyword.get(registration, :links, []),
-        do: %{app: app, label: label, path: path}
+        link <- Keyword.get(registration, :links, []),
+        {^place, label, path, opts} <- [with_opts(link)],
+        do: %{app: app, label: label, path: path, opts: opts}
   end
+
+  defp with_opts({place, label, path}), do: {place, label, path, []}
+  defp with_opts({_place, _label, _path, opts} = link) when is_list(opts), do: link
 
   @doc """
   Returns the panels that fill `place`, in registration order, leaving out any whose component

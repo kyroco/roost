@@ -13,7 +13,11 @@ if config_env() == :test do
         {:main, :get, "/present-route", Roost.Test.PresentController, :show},
         {:main, :post, "/present-route", Roost.Test.PresentController, :create}
       ],
-      links: [{:sidebar, "Present page", "/present"}, {:footer, "Help", "/help"}],
+      links: [
+        {:sidebar, "Present page", "/present"},
+        {:footer, "Help", "/help"},
+        {:footer, "Status", "/status", icon: "signal", blurb: "Is it up"}
+      ],
       settings: [{:greeting, "Greeting the page shows", "hello"}],
       panels: [{:host_top, Roost.Test.PresentPanel}],
       jobs: [

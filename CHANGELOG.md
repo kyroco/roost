@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.0
+
+- A link may carry options: `{place, label, path, opts}` registers a keyword list, such as an icon or a line of text, that the host reads as it draws the link. `Roost.links/1` now returns `opts` on every link, `[]` for the three-element form, which is unchanged.
+
 ## 0.5.0
 
 - Controller routes: a registration names `routes: [{scope, verb, path, controller, action}]`, and the host writes them into its own scope with `Roost.Router.roost_routes/1`. Each runs the host's pipeline for that scope and then `Roost.Plug`, so a route whose app is not in the running release answers 404.

@@ -18,12 +18,26 @@ defmodule RoostTest do
 
   describe "links/1" do
     test "returns the links present apps bring to a place, and none from an absent app" do
-      assert Roost.links(:sidebar) == [%{app: :roost, label: "Present page", path: "/present"}]
+      assert Roost.links(:sidebar) == [
+               %{app: :roost, label: "Present page", path: "/present", opts: []}
+             ]
     end
 
     test "returns only the links for the place asked" do
-      assert Roost.links(:footer) == [%{app: :roost, label: "Help", path: "/help"}]
+      assert [%{label: "Help"}, %{label: "Status"}] = Roost.links(:footer)
       assert Roost.links(:nowhere) == []
+    end
+
+    test "a link registered with options carries them, in order with three-element links" do
+      assert Roost.links(:footer) == [
+               %{app: :roost, label: "Help", path: "/help", opts: []},
+               %{
+                 app: :roost,
+                 label: "Status",
+                 path: "/status",
+                 opts: [icon: "signal", blurb: "Is it up"]
+               }
+             ]
     end
   end
 
