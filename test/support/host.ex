@@ -3,7 +3,8 @@ defmodule Roost.Test.PresentLive do
   use Phoenix.LiveView
 
   @impl Phoenix.LiveView
-  def render(assigns), do: ~H"<p id='present-page'>A page an app brings</p>"
+  def render(assigns),
+    do: ~H"<p id='present-page'>A page an app brings, as {@live_action || :index}</p>"
 end
 
 defmodule Roost.Test.PresentPanel do

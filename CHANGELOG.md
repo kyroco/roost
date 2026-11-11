@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.0
+
+- A page may carry a live action: `{live_session, path, live_view, action}` opens the page with that action, as Phoenix's `live/3` does, so one page module can serve several paths. The three-element form is unchanged.
+
 ## 0.3.0
 
 - Background jobs: a registration names Oban crontab entries under `:jobs`, and `Roost.jobs/0` returns those whose worker is in the running release, for the host to add to its schedule.

@@ -11,6 +11,19 @@ defmodule Roost.RouterTest do
     assert html_response(conn, 200) =~ "A page an app brings"
   end
 
+  test "a registered page with an action opens the page with that live action" do
+    conn = get(build_conn(), "/present/other")
+
+    assert html_response(conn, 200) =~ "A page an app brings, as other"
+
+    route = Enum.find(Phoenix.Router.routes(Roost.Test.Router), &(&1.path == "/present/other"))
+    assert elem(route.metadata.phoenix_live_view, 1) == :other
+  end
+
+  test "a registered page with no action opens with no live action" do
+    assert html_response(get(build_conn(), "/present"), 200) =~ "A page an app brings, as index"
+  end
+
   test "a registered page of an app not in the release answers 404, with no error" do
     conn = get(build_conn(), "/absent")
 

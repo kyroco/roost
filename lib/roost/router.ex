@@ -27,14 +27,19 @@ defmodule Roost.Router do
   defmacro roost_pages(live_session) when is_atom(live_session) do
     pages =
       for {_app, registration} <- Roost.registered(),
-          {^live_session, path, live_view} <- Keyword.get(registration, :pages, []),
-          do: {path, live_view}
+          page <- Keyword.get(registration, :pages, []),
+          elem(page, 0) == live_session,
+          do: page_route(page)
 
     routes =
-      for {path, live_view} <- pages, do: quote(do: live(unquote(path), unquote(live_view)))
+      for {path, live_view, action} <- pages do
+        if action,
+          do: quote(do: live(unquote(path), unquote(live_view), unquote(action))),
+          else: quote(do: live(unquote(path), unquote(live_view)))
+      end
 
     quote do
-      @compile {:no_warn_undefined, unquote(Enum.map(pages, &elem(&1, 1)))}
+      @compile {:no_warn_undefined, unquote(Enum.map(pages, &elem(&1, 1)) |> Enum.uniq())}
 
       scope "/", alias: false do
         pipe_through(Roost.Plug)
@@ -42,4 +47,11 @@ defmodule Roost.Router do
       end
     end
   end
+
+  # A page is {live_session, path, live_view}, or {live_session, path, live_view, action} for a
+  # page that opens with that live action, as Phoenix's own `live/3` takes it.
+  defp page_route({_live_session, path, live_view}), do: {path, live_view, nil}
+
+  defp page_route({_live_session, path, live_view, action}) when is_atom(action),
+    do: {path, live_view, action}
 end

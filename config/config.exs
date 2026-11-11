@@ -5,7 +5,10 @@ if config_env() == :test do
   # is not in the release, whose page module does not exist.
   config :roost, :apps,
     roost: [
-      pages: [{:main, "/present", Roost.Test.PresentLive}],
+      pages: [
+        {:main, "/present", Roost.Test.PresentLive},
+        {:main, "/present/other", Roost.Test.PresentLive, :other}
+      ],
       links: [{:sidebar, "Present page", "/present"}, {:footer, "Help", "/help"}],
       settings: [{:greeting, "Greeting the page shows", "hello"}],
       panels: [{:host_top, Roost.Test.PresentPanel}],
