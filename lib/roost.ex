@@ -33,17 +33,23 @@ defmodule Roost do
     * `:links` - `{place, label, path}`: a link the host draws at a named place, such as a menu.
     * `:settings` - `{key, label, default}`: a setting the host shows. Its value is the app's own
       application env under `key`, else `default`.
+    * `:panels` - `{place, live_component}`: a panel that fills a named place on a host page
+      (`Roost.Panel.place/1`). A place no app fills shows nothing.
   """
 
   @typedoc "One app's registration."
   @type registration :: [
           pages: [{atom(), String.t(), module()}],
           links: [{atom(), String.t(), String.t()}],
-          settings: [{atom(), String.t(), term()}]
+          settings: [{atom(), String.t(), term()}],
+          panels: [{atom(), module()}]
         ]
 
   @typedoc "A link a present app brings to a place."
   @type link :: %{app: atom(), label: String.t(), path: String.t()}
+
+  @typedoc "A panel that fills a named place on a host page."
+  @type panel :: %{app: atom(), place: atom(), component: module()}
 
   @typedoc "A setting a present app brings, with its current value."
   @type setting :: %{app: atom(), key: atom(), label: String.t(), value: term()}
@@ -71,6 +77,27 @@ defmodule Roost do
     for {app, registration} <- present(),
         {^place, label, path} <- Keyword.get(registration, :links, []),
         do: %{app: app, label: label, path: path}
+  end
+
+  @doc """
+  Returns the panels that fill `place`, in registration order, leaving out any whose component
+  is not in the running release.
+  """
+  @spec panels(atom()) :: [panel()]
+  def panels(place) when is_atom(place) do
+    for {app, registration} <- registered(),
+        {^place, component} <- Keyword.get(registration, :panels, []),
+        in_release?(component),
+        do: %{app: app, place: place, component: component}
+  end
+
+  @doc false
+  @spec in_release?(module()) :: boolean()
+  def in_release?(module) when is_atom(module) do
+    case Application.get_application(module) do
+      nil -> false
+      app -> present?(app)
+    end
   end
 
   @doc "Returns the settings present apps bring, each with its current value."

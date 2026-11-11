@@ -15,17 +15,10 @@ defmodule Roost.Plug do
 
   @impl Plug
   def call(%Plug.Conn{private: %{phoenix_live_view: route}} = conn, _opts) do
-    if in_release?(elem(route, 0)), do: conn, else: not_found(conn)
+    if Roost.in_release?(elem(route, 0)), do: conn, else: not_found(conn)
   end
 
   def call(conn, _opts), do: conn
-
-  defp in_release?(live_view) do
-    case Application.get_application(live_view) do
-      nil -> false
-      app -> Roost.present?(app)
-    end
-  end
 
   defp not_found(conn) do
     conn

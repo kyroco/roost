@@ -7,12 +7,14 @@ if config_env() == :test do
     roost: [
       pages: [{:main, "/present", Roost.Test.PresentLive}],
       links: [{:sidebar, "Present page", "/present"}, {:footer, "Help", "/help"}],
-      settings: [{:greeting, "Greeting the page shows", "hello"}]
+      settings: [{:greeting, "Greeting the page shows", "hello"}],
+      panels: [{:host_top, Roost.Test.PresentPanel}]
     ],
     not_in_release: [
       pages: [{:main, "/absent", Roost.Test.AbsentLive}],
       links: [{:sidebar, "Absent page", "/absent"}],
-      settings: [{:absent_setting, "A setting nobody sees", 1}]
+      settings: [{:absent_setting, "A setting nobody sees", 1}],
+      panels: [{:host_top, Roost.Test.AbsentPanel}, {:host_bottom, Roost.Test.AbsentPanel}]
     ]
 
   config :roost, Roost.Test.Endpoint,

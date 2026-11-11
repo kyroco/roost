@@ -2,7 +2,7 @@
 
 One registration per app, for Phoenix umbrella projects.
 
-An app in an umbrella registers itself once. Its one registration names everything it brings to the host web app: its LiveView pages, the links that lead to them, and its settings. When the app is in the release, all of it shows. When it is not, none of it shows, and its pages answer 404 instead of crashing.
+An app in an umbrella registers itself once. Its one registration names everything it brings to the host web app: its LiveView pages, the links that lead to them, its settings, and the panels it puts on the host's pages. When the app is in the release, all of it shows. When it is not, none of it shows, and its pages answer 404 instead of crashing.
 
 The host never names an app. The same build can then ship more than one release, each carrying a different set of apps.
 
@@ -12,10 +12,10 @@ Roost is below version 1.0. Its shape may still change.
 
 Roost follows the pattern Phoenix LiveDashboard uses. The app brings its pages, and the host's one router writes them in when it is built. A page therefore sits in the host's own `live_session`, behind the host's sign-in checks and layout. Moving between it and the host's other pages in that session needs no reload.
 
-1. Each app registers its pages, links and settings as plain data in a `roost.exs` file in its own folder.
+1. Each app registers its pages, links, settings and panels as plain data in a `roost.exs` file in its own folder.
 2. The host's config imports every such file.
 3. The host's router calls `roost_pages/1` inside a `live_session`, which writes in every page registered to that session.
-4. At run time, `Roost.links/1` and `Roost.settings/0` return only what the apps in the running release bring. `Roost.Plug` answers 404 for a page whose app is not there.
+4. At run time, `Roost.links/1` and `Roost.settings/0` return only what the apps in the running release bring. A named place on a host page (`Roost.Panel.place/1`) shows only their panels. `Roost.Plug` answers 404 for a page whose app is not there.
 
 ## Installation
 
@@ -84,7 +84,24 @@ end
 </dl>
 ```
 
-### 5. Put the app in the release
+### 5. Fill named places with panels
+
+A host page marks a named place and passes what the panels need:
+
+```heex
+<Roost.Panel.place name={:account_page} context={%{account_id: @account_id}} />
+```
+
+An app fills it with a `Phoenix.LiveComponent`, named in its registration:
+
+```elixir
+config :roost, :apps,
+  reports: [panels: [{:account_page, Reports.AccountPanel}]]
+```
+
+Each panel is rendered as a live component, so it keeps its own state and handles its own events. It receives `:context`, the map the host passed, and `:place`, the place's name. A place no app in the running release fills renders nothing, and no error.
+
+### 6. Put the app in the release
 
 The host does not depend on its apps, so a release carries an app only if the release lists it:
 
@@ -94,7 +111,7 @@ releases: [
 ]
 ```
 
-Leave the app out of a release, and its pages, links and settings are gone from that release.
+Leave the app out of a release, and its pages, links, settings and panels are gone from that release.
 
 ## Things to know
 
@@ -105,7 +122,7 @@ Leave the app out of a release, and its pages, links and settings are gone from 
 
 ## Not yet
 
-Registrations do not yet cover page panels (named places on a host page that an app fills), background jobs or database migrations.
+Registrations do not yet cover background jobs or database migrations.
 
 ## License
 
