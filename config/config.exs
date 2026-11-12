@@ -24,7 +24,12 @@ if config_env() == :test do
         {"0 3 * * *", Roost.Test.NightlyWorker},
         {"*/5 * * * *", Roost.Test.NightlyWorker, queue: :maintenance}
       ],
-      migrations: [{Roost.Test.Repo, "priv/repo/migrations"}]
+      migrations: [{Roost.Test.Repo, "priv/repo/migrations"}],
+      provides: [
+        {:greeter, Roost.Test.Greeter},
+        {:missing_module, Roost.Test.NoSuchModule},
+        {:shared, Roost.Test.Greeter}
+      ]
     ],
     not_in_release: [
       pages: [{:main, "/absent", Roost.Test.AbsentLive}],
@@ -33,7 +38,11 @@ if config_env() == :test do
       settings: [{:absent_setting, "A setting nobody sees", 1}],
       panels: [{:host_top, Roost.Test.AbsentPanel}, {:host_bottom, Roost.Test.AbsentPanel}],
       jobs: [{"* * * * *", Roost.Test.AbsentWorker}],
-      migrations: [{Roost.Test.Repo, "priv/repo/migrations"}]
+      migrations: [{Roost.Test.Repo, "priv/repo/migrations"}],
+      provides: [
+        {:absent_greeter, Roost.Test.AbsentGreeter},
+        {:shared, Roost.Test.AbsentGreeter}
+      ]
     ]
 
   config :roost, Roost.Test.Endpoint,

@@ -34,6 +34,11 @@ defmodule Roost.Test.HostLive do
   end
 end
 
+defmodule Roost.Test.Greeter do
+  @moduledoc false
+  def greet(name), do: "Hello, " <> name
+end
+
 defmodule Roost.Test.PresentController do
   @moduledoc false
   use Phoenix.Controller, formats: [:html]
