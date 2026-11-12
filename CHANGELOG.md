@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.0
+
+- Provided modules: a registration names `provides: [{name, module}]`, and `Roost.provider/1` returns the module an app in the running release provides under that name, or nil when none does, so host code can call an app without naming it. A name two registrations provide raises `ArgumentError` naming both, whether or not they are in the release.
+
 ## 0.6.0
 
 - A link may carry options: `{place, label, path, opts}` registers a keyword list, such as an icon or a line of text, that the host reads as it draws the link. `Roost.links/1` now returns `opts` on every link, `[]` for the three-element form, which is unchanged.

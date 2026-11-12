@@ -45,6 +45,9 @@ defmodule Roost do
       that the host adds to its schedule (`jobs/0`).
     * `:migrations` - `{repo, path}`: a migrations folder inside the app that the host runs on
       `repo` after its own (`migrations/1`).
+    * `:provides` - `{name, module}`: a module the host calls under a name it knows, such as
+      `{:checkout, MyApp.Checkout}`, so host code can ask an app for work without naming it
+      (`provider/1`). One name has one provider: two registrations naming it are refused.
   """
 
   @typedoc "One app's registration."
@@ -55,7 +58,8 @@ defmodule Roost do
           settings: [{atom(), String.t(), term()}],
           panels: [{atom(), module()}],
           jobs: [{String.t(), module()} | {String.t(), module(), keyword()}],
-          migrations: [{module(), String.t()}]
+          migrations: [{module(), String.t()}],
+          provides: [{atom(), module()}]
         ]
 
   @typedoc "A link a present app brings to a place, with the options it was registered with."
@@ -114,6 +118,35 @@ defmodule Roost do
     case Application.get_application(module) do
       nil -> false
       app -> present?(app)
+    end
+  end
+
+  @doc """
+  Returns the module an app in the running release provides under `name`, or nil when none does,
+  so the host calls it or does without.
+
+  Raises `ArgumentError`, naming each app and module, when more than one registration provides
+  `name`, whether or not those apps are in the release, so the clash shows in every build.
+  """
+  @spec provider(atom()) :: module() | nil
+  def provider(name) when is_atom(name) do
+    case for(
+           {app, registration} <- registered(),
+           {^name, module} <- Keyword.get(registration, :provides, []),
+           do: {app, module}
+         ) do
+      [] ->
+        nil
+
+      [{_app, module}] ->
+        if in_release?(module), do: module
+
+      providers ->
+        raise ArgumentError,
+              "#{inspect(name)} is provided by more than one registration: " <>
+                Enum.map_join(providers, ", ", fn {app, module} ->
+                  "#{inspect(app)} (#{inspect(module)})"
+                end)
     end
   end
 

@@ -2,7 +2,7 @@
 
 One registration per app, for Phoenix umbrella projects.
 
-An app in an umbrella registers itself once. Its one registration names everything it brings to the host web app: its LiveView pages, the links that lead to them, its settings, the panels it puts on the host's pages, its scheduled jobs and its database migrations. When the app is in the release, all of it shows. When it is not, none of it shows, and its pages answer 404 instead of crashing.
+An app in an umbrella registers itself once. Its one registration names everything it brings to the host web app: its LiveView pages, the links that lead to them, its settings, the panels it puts on the host's pages, its scheduled jobs, its database migrations and the modules it provides for the host to call. When the app is in the release, all of it shows. When it is not, none of it shows, and its pages answer 404 instead of crashing.
 
 The host never names an app. The same build can then ship more than one release, each carrying a different set of apps.
 
@@ -48,6 +48,7 @@ config :roost, :apps,
 - `routes` lists `{scope, verb, path, controller, action}`. Each is a controller route, such as a form post or a file, that the host writes into its own scope of that name with `roost_routes/1`, behind that scope's pipeline and `Roost.Plug`.
 - `links` lists `{place, label, path}`. Each is a link the host draws at a named place, such as a menu. Add a fourth element, `{place, label, path, opts}`, to give the host a keyword list it reads as it draws the link, such as `icon: "chart"`; every link `Roost.links/1` returns carries `opts`, `[]` when none were given.
 - `settings` lists `{key, label, default}`. The setting's value is the app's own application env under `key`, or the default.
+- `provides` lists `{name, module}`. Each is a module the host calls under a name it knows; see step 7.
 
 ### 2. Read every registration in the host's config
 
@@ -126,7 +127,27 @@ end
 
 Roost does not depend on Oban or Ecto; jobs and migrations are plain data the host hands to them.
 
-### 7. Put the app in the release
+### 7. Call a module an app provides
+
+When host code needs an app to do something and hand back an answer, the app provides a module under a name the host knows:
+
+```elixir
+config :roost, :apps,
+  reports: [provides: [{:report_builder, Reports.Builder}]]
+```
+
+The host asks for whoever provides that name, and does without when no app in the release does:
+
+```elixir
+case Roost.provider(:report_builder) do
+  nil -> {:error, :no_reports}
+  builder -> builder.build(account)
+end
+```
+
+One name has one provider. Two registrations providing the same name raise `ArgumentError`, naming both, whether or not each app is in the release, so the clash shows in every build.
+
+### 8. Put the app in the release
 
 The host does not depend on its apps, so a release carries an app only if the release lists it:
 
@@ -136,7 +157,7 @@ releases: [
 ]
 ```
 
-Leave the app out of a release, and its pages, links, settings, panels, jobs and migrations are gone from that release.
+Leave the app out of a release, and its pages, links, settings, panels, jobs, migrations and provided modules are gone from that release.
 
 ## Things to know
 
