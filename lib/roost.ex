@@ -48,6 +48,14 @@ defmodule Roost do
     * `:provides` - `{name, module}`: a module the host calls under a name it knows, such as
       `{:checkout, MyApp.Checkout}`, so host code can ask an app for work without naming it
       (`provider/1`). One name has one provider: two registrations naming it are refused.
+
+  ## Points
+
+  The host may declare the names it calls as points, each with a behaviour and either a stand-in
+  or `required: true` (`Roost.Point`). An app then fills only a point the host declares, its
+  module declares the point's behaviour, `point/1` answers with the stand-in when no app in the
+  release fills it, and `Roost.Point.check!/1` refuses at start a provider that is missing, lacks
+  a call or fills a point the host never declared.
   """
 
   @typedoc "One app's registration."
@@ -147,6 +155,50 @@ defmodule Roost do
                 Enum.map_join(providers, ", ", fn {app, module} ->
                   "#{inspect(app)} (#{inspect(module)})"
                 end)
+    end
+  end
+
+  @doc """
+  Returns the module to call at the point `name` the host declares: the provider an app in the
+  running release registers, else the point's stand-in.
+
+  Raises `ArgumentError` when the host declares no point `name`, when the point takes several
+  providers (use `providers/1`), or when it is required and no app in the release fills it, which
+  `Roost.Point.check!/1` refuses at start.
+  """
+  @spec point(atom()) :: module()
+  def point(name) when is_atom(name) do
+    declaration = declaration!(name)
+
+    if declaration[:many] == true do
+      raise ArgumentError, "point #{inspect(name)} takes several providers; ask providers/1"
+    end
+
+    provider(name) || declaration[:stand_in] ||
+      raise ArgumentError,
+            "point #{inspect(name)} is required and no app in the release provides it"
+  end
+
+  @doc """
+  Returns every module the apps in the running release provide at the point `name`, which the
+  host declares with `many: true`, in registration order, or `[]` when none does.
+  """
+  @spec providers(atom()) :: [module()]
+  def providers(name) when is_atom(name) do
+    if declaration!(name)[:many] != true do
+      raise ArgumentError, "point #{inspect(name)} takes one provider; ask point/1"
+    end
+
+    for {_app, registration} <- registered(),
+        {^name, module} <- Keyword.get(registration, :provides, []),
+        in_release?(module),
+        do: module
+  end
+
+  defp declaration!(name) do
+    case Keyword.fetch(Roost.Point.declared(), name) do
+      {:ok, declaration} -> declaration
+      :error -> raise ArgumentError, "#{inspect(name)} is not a point the host declares"
     end
   end
 

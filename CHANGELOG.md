@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.0
+
+- Points: the host declares the names it calls under `config :roost, :points`, each with a behaviour and either a stand-in or `required: true`, or `many: true` for a point several apps fill. `Roost.point/1` returns the provider in the running release or the stand-in, `Roost.providers/1` returns every provider of a many point, and `Roost.Point.check!/1` refuses at start a name the host does not declare, a provider that is not loaded, does not declare the behaviour or lacks a call, two providers at a one-provider point, a stand-in that lacks a call, and a required point no app fills, naming each in `Roost.PointError`. `Roost.provider/1` is unchanged.
+
 ## 0.7.0
 
 - Provided modules: a registration names `provides: [{name, module}]`, and `Roost.provider/1` returns the module an app in the running release provides under that name, or nil when none does, so host code can call an app without naming it. A name two registrations provide raises `ArgumentError` naming both, whether or not they are in the release.

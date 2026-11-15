@@ -28,7 +28,9 @@ if config_env() == :test do
       provides: [
         {:greeter, Roost.Test.Greeter},
         {:missing_module, Roost.Test.NoSuchModule},
-        {:shared, Roost.Test.Greeter}
+        {:shared, Roost.Test.Greeter},
+        {:greetings, Roost.Test.Greeter},
+        {:greetings, Roost.Test.OtherGreeter}
       ]
     ],
     not_in_release: [
@@ -41,9 +43,18 @@ if config_env() == :test do
       migrations: [{Roost.Test.Repo, "priv/repo/migrations"}],
       provides: [
         {:absent_greeter, Roost.Test.AbsentGreeter},
-        {:shared, Roost.Test.AbsentGreeter}
+        {:shared, Roost.Test.AbsentGreeter},
+        {:greetings, Roost.Test.AbsentGreeter}
       ]
     ]
+
+  # The points the host of these tests declares: one an app fills, one only an absent app fills,
+  # one several apps fill, and one that is required.
+  config :roost, :points,
+    greeter: [behaviour: Roost.Test.Greeting, stand_in: Roost.Test.SilentGreeter],
+    absent_greeter: [behaviour: Roost.Test.Greeting, stand_in: Roost.Test.SilentGreeter],
+    greetings: [behaviour: Roost.Test.Greeting, many: true],
+    must_greet: [behaviour: Roost.Test.Greeting, required: true]
 
   config :roost, Roost.Test.Endpoint,
     secret_key_base: String.duplicate("a", 64),
