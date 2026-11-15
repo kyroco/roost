@@ -147,6 +147,36 @@ end
 
 One name has one provider. Two registrations providing the same name raise `ArgumentError`, naming both, whether or not each app is in the release, so the clash shows in every build.
 
+### 7a. Declare the points the host calls
+
+A provided name can be left loose, as above, or the host can declare it as a point: a name, a behaviour that states every call and its answer, and either a stand-in for when no app fills it or `required: true`. Once the host declares points, an app may fill only a point the host declares, so no app invents a name the host calls.
+
+```elixir
+config :roost, :points,
+  report_builder: [behaviour: MyHost.ReportBuilder, stand_in: MyHost.ReportBuilder.None],
+  payments: [behaviour: MyHost.Payments, required: true],
+  account_deleted: [behaviour: MyHost.AccountDeleted, many: true]
+```
+
+The app's module declares the behaviour, so the compiler names a call it lacks:
+
+```elixir
+defmodule Reports.Builder do
+  @behaviour MyHost.ReportBuilder
+  @impl true
+  def build(account), do: ...
+end
+```
+
+The host asks the point, and gets the stand-in when no app in the release fills it:
+
+```elixir
+Roost.point(:report_builder).build(account)
+Enum.each(Roost.providers(:account_deleted), & &1.deleted(account_id))
+```
+
+Call `Roost.Point.check!/1` when the host starts. It raises `Roost.PointError`, naming every problem, when an app provides a name the host does not declare, a provider in the release is not loaded, does not declare the behaviour or lacks a call, two apps fill a point that takes one, a stand-in lacks a call, or a required point has no provider. `allow_undeclared: [name]` lets a name through while it waits to be declared.
+
 ### 8. Put the app in the release
 
 The host does not depend on its apps, so a release carries an app only if the release lists it:
@@ -157,7 +187,7 @@ releases: [
 ]
 ```
 
-Leave the app out of a release, and its pages, links, settings, panels, jobs, migrations and provided modules are gone from that release.
+Leave the app out of a release, and its pages, links, settings, panels, jobs, migrations and provided modules are gone from that release, and each point it filled answers with its stand-in.
 
 ## Things to know
 
